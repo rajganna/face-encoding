@@ -1,0 +1,4 @@
+{
+    "database_name": "database.db",
+    "face_encoding_service_url" : "http://face-encoding-api:8000/v1/selfie"
+}

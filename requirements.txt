@@ -1,0 +1,14 @@
+fastapi~=0.110.2
+uvicorn
+sqlalchemy
+pydantic~=2.9.2
+httpx
+starlette
+redis~=4.6.0
+requests~=2.32.1
+sqlmodel~=0.0.22
+flake8
+pytest
+coverage
+pytest-mock
+pytest-asyncio
