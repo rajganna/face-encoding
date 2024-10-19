@@ -1,0 +1,39 @@
+# .idea/workspace.xml
+# .idea/tasks.xml
+# .idea/dictionaries
+# .idea/vcs.xml
+# .idea/jsLibraryMappings.xml
+
+# .idea/dataSources.ids
+# .idea/dataSources.xml
+# .idea/dataSources.local.xml
+# .idea/sqlDataSources.xml
+# .idea/dynamic.xml
+# .idea/uiDesigner.xml
+
+.idea
+
+# Python
+*.pyc
+.eggs
+*.egg-info
+
+# Virtualenv
+.env
+venv
+
+.DS_Store
+.project
+.pydevproject
+
+.cache
+
+.coverage
+coverage.xml
+tests.xml
+
+.pytest_cache/
+
+pip.conf
+
+__pycache__
