@@ -12,3 +12,6 @@ pytest
 coverage
 pytest-mock
 pytest-asyncio
+aiosqlite
+databases
+greenlet

@@ -1,10 +1,11 @@
-from unittest.mock import MagicMock, patch, create_autospec
+from unittest.mock import AsyncMock, MagicMock, patch, create_autospec
 
 import pytest
+import pytest_asyncio
 
-from app.api.session.models import SessionDep
+from app.api.session.models import SessionDep, Sessions
 
-mock_session_id = "123456"
+mock_session_id = "1e1d09a8-4674-41df-b2f3-25c3bd5efd58"
 mock_encodings = {"encoding": [1.0, 2.0, 3.0]}
 mock_verification = {"vendorData": mock_session_id, "callback": "some_callback"}
 mock_callback = "some_callback"
@@ -36,20 +37,33 @@ media_request_data = {
 }
 
 
-@pytest.fixture
-def session_dep():
+@pytest_asyncio.fixture
+async def session_dep():
     mock_session = create_autospec(SessionDep, instance=True)
-    mock_session.exec = MagicMock()
-    mock_session.add = MagicMock()
-    mock_session.commit = MagicMock()
-    mock_session.refresh = MagicMock()
+    mock_session.execute = AsyncMock()
+    mock_session.add = AsyncMock()
+    mock_session.commit = AsyncMock()
+    mock_session.refresh = AsyncMock()
     yield mock_session
 
 
 @pytest.fixture
 def mock_session():
-    with patch("app.api.session.session.get_session") as mock_get_session:
+    with patch("app.api.session.session.get_session", new_callable=AsyncMock) as mock_get_session:
         yield mock_get_session
+
+
+@pytest.fixture
+def mock_session_exists():
+    with patch("app.api.session.session.session_exists", new_callable=AsyncMock) as mock_exists:
+        yield mock_exists
+
+
+@pytest.fixture
+def mock_create_session_encoding():
+    """Fixture to mock the get_session_encoding function."""
+    with patch("app.api.session.session.create_db_session") as mock:
+        yield mock
 
 
 @pytest.fixture
@@ -77,9 +91,14 @@ class MockSessions:
 
 
 class MockSessionData:
-    def __init__(self, session_id, status):
-        self.session_id = session_id
-        self.Sessions = MockSessions(status)
+    class Sessions:
+        def __init__(self, status, session_id, callback):
+            self.status = status
+            self.session_id = session_id
+            self.callback = callback
+
+    def __init__(self, session_id, callback, status):
+        self.Sessions = self.Sessions(status, session_id, callback)
 
 
 class MockMediaUploadRequestModel:

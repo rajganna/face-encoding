@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel
 
-from app.api.session.models import engine
+from app.api.session.models import sync_engine as engine
 from app.bootstrap import bootstrap
 
 

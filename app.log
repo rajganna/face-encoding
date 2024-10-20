@@ -1,0 +1,2 @@
+2024-10-20 18:43:10,917 - app.lib.logging_config - ERROR - An error occurred: [Errno 8] nodename nor servname provided, or not known
+2024-10-20 18:43:52,775 - app.lib.logging_config - ERROR - An error occurred: [Errno 8] nodename nor servname provided, or not known

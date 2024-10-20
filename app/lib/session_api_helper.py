@@ -7,10 +7,16 @@ from httpx import Response
 from app.api.session.dao import get_db_session
 from app.api.session.dto import (ValidationErrorResponseModel,
                                  Status,
-                                 MediaUploadRequestModel)
+                                 MediaUploadRequestModel,
+                                 RequestModel)
 from app.api.session.models import SessionDep
 from app.config.app_config import config
 from app.lib.logging_config import logger
+
+
+async def session_exists(request: RequestModel, session: SessionDep) -> bool:
+    session_data = await get_db_session(str(request.verification.vendorData), session)
+    return session_data is not None
 
 
 def validate_api_response(response: Response):
@@ -21,18 +27,23 @@ def validate_api_response(response: Response):
             detail="More than 5 faces found in the image."
         )
     elif response.status_code == 422:
-        try:
-            errors = ValidationErrorResponseModel(**response.json())
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=errors.detail,
-            )
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Validation error occurred with "
-                       "the external API response."
-            )
+        handle_validation_error(response)
+    else:
+        response.raise_for_status()
+
+
+def handle_validation_error(response: Response):
+    try:
+        errors = ValidationErrorResponseModel(**response.json())
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=errors.detail,
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Validation error occurred with the external API response."
+        )
 
 
 def get_filename_and_content_type(image_type: str):
@@ -53,13 +64,13 @@ def get_filename_and_content_type(image_type: str):
     return filename, content_type
 
 
-def verify_session_id(sessionId: str, session: SessionDep):
-    session_data = get_db_session(sessionId, session)
+async def verify_session_id(sessionId: str, session: SessionDep):
+    session_data = await get_db_session(sessionId, session)
     if not session_data:
         raise HTTPException(
             status_code=404,
             detail="Session not found")
-    if session_data.Sessions.status != Status.CREATED:
+    if session_data.status != Status.CREATED:
         raise HTTPException(status_code=400,
                             detail="Session already processed")
 

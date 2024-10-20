@@ -15,7 +15,7 @@ This project enables customers to utilize Veriff’s Face Encoding product, whic
 ### API Endpoints
 Create Session: Start a new session by providing verification data.
 Upload Media: Upload images to an existing session.
-Get Decision: Retrieve the face encoding results and session summary.
+Get summary: Retrieve the face encoding results and session summary.
 
 ## Developing
 
@@ -108,10 +108,10 @@ curl -X 'POST' \
   }'
 Replace {sessionId} with the actual session ID in the URL.
 ```
-## 3. Get Decision (GET /api/sessions/{session_id}/decision)
+## 3. Get Summary (GET /api/sessions/{session_id}/summary)
 ```bash
 curl -X 'GET' \
-  'http://127.0.0.1:8001/api/sessions/{session_id}/decision' \
+  'http://127.0.0.1:8001/api/sessions/{session_id}/summary' \
   -H 'accept: application/json'
 
 Replace {session_id} with the actual session ID in the URL.

@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 
-from app.api.session.models import engine
+from app.api.session.models import sync_engine
 from app.api.session.session import router
 
 
@@ -33,4 +33,4 @@ def setup(app):
 
 
 def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
+    SQLModel.metadata.create_all(sync_engine)

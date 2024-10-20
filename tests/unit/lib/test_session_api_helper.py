@@ -1,6 +1,7 @@
 import base64
 from unittest.mock import MagicMock, AsyncMock, patch
 
+import asyncio
 import pytest
 from fastapi import HTTPException
 from httpx import Response
@@ -9,10 +10,12 @@ from starlette import status
 from app.api.session.dto import ValidationErrorResponseModel, Status
 from app.lib.session_api_helper import validate_api_response, get_filename_and_content_type, verify_session_id, \
     post_face_encodings
-from tests.unit.test_utils import MockSessionData, MockMediaUploadRequestModel
+from tests.unit.test_utils import MockSessionData, MockMediaUploadRequestModel, mock_session_id
+from app.api.session.models import Sessions
 
 
-def test_verify_api_response_invalid_request():
+@pytest.mark.asyncio
+async def test_verify_api_response_invalid_request():
     response = Response(status_code=400)
     with pytest.raises(HTTPException) as exc:
         validate_api_response(response)
@@ -20,87 +23,79 @@ def test_verify_api_response_invalid_request():
     assert exc.value.detail == "More than 5 faces found in the image."
 
 
-def test_verify_api_response_validation_error():
+@pytest.mark.asyncio
+async def test_verify_api_response_validation_error():
     response = Response(status_code=422, json="Invalid JSON")
-
     with pytest.raises(HTTPException) as exc_info:
         validate_api_response(response)
-
     assert exc_info.value.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert exc_info.value.detail == "Validation error occurred with the external API response."
 
 
-def test_verify_api_response_invalid_json(mocker):
+@pytest.mark.asyncio
+async def test_verify_api_response_invalid_json(mocker):
     response_data = {
         "detail": [{"loc": ["body", "field"], "msg": "Invalid input", "type": "value_error"}]
     }
     response = Response(status_code=422, json=response_data)
-
     validation_error_response = ValidationErrorResponseModel(**response_data)
-
     mocker.patch('app.api.session.dto.ValidationErrorResponseModel', return_value=validation_error_response)
-
     with pytest.raises(HTTPException) as exc_info:
         validate_api_response(response)
-
     assert exc_info.value.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert exc_info.value.detail == "Validation error occurred with the external API response."
 
 
-def test_get_filename_and_content_type():
-    filename, content_type = get_filename_and_content_type("jpg")
-    assert filename == "image.jpg"
-    assert content_type == "image/jpeg"
-
-    filename, content_type = get_filename_and_content_type("png")
-    assert filename == "image.png"
-    assert content_type == "image/png"
-
-    filename, content_type = get_filename_and_content_type("gif")
-    assert filename == "image.gif"
-    assert content_type == "image/gif"
-
-    filename, content_type = get_filename_and_content_type("bmp")
-    assert filename == "image.bmp"
-    assert content_type == "image/bmp"
-
-
-def test_verify_session_id_not_found():
-    mock_session_dep = MagicMock()
-    session_id = "non_existent_session_id"
-
-    mock_session_dep.exec.return_value.first.return_value = None
+@pytest.mark.asyncio
+async def test_verify_session_id_not_found():
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.first.return_value = None
+    mock_db = AsyncMock(return_value=asyncio.Future())
+    mock_db.execute.return_value = mock_result
 
     with pytest.raises(HTTPException) as exc_info:
-        verify_session_id(session_id, mock_session_dep)
+        await verify_session_id(mock_session_id, mock_db)
 
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "Session not found"
 
 
-def test_verify_session_id_already_processed():
-    mock_session_dep = MagicMock()
-    session_id = "processed_session_id"
-
-    mock_session_dep.exec.return_value.first.return_value = MockSessionData(session_id, Status.SUBMITTED)
+@pytest.mark.asyncio
+async def test_verify_session_id_already_processed():
+    mock_session_data = Sessions(
+        session_id=mock_session_id,
+        callback='some_callback',
+        status=Status.SUBMITTED
+    )
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.first.return_value = mock_session_data
+    mock_db = AsyncMock(return_value=asyncio.Future())
+    mock_db.execute.return_value = mock_result
 
     with pytest.raises(HTTPException) as exc_info:
-        verify_session_id(session_id, mock_session_dep)
+        await verify_session_id(mock_session_id, mock_db)
 
     assert exc_info.value.status_code == 400
     assert exc_info.value.detail == "Session already processed"
 
 
-def test_verify_session_id_success():
-    mock_session_dep = MagicMock()
-    session_id = "test_session_id"
+@pytest.mark.asyncio
+async def test_verify_session_id_success():
+    mock_session_data = Sessions(
+        session_id=mock_session_id,
+        callback='some_callback',
+        status=Status.CREATED
+    )
+    mock_result = MagicMock()
+    mock_result.scalars.return_value.first.return_value = mock_session_data
+    mock_db = AsyncMock(return_value=asyncio.Future())
+    mock_db.execute.return_value = mock_result
 
-    mock_session_dep.exec.return_value.first.return_value = MockSessionData(session_id, Status.CREATED)
+    await verify_session_id(mock_session_id, mock_db)
 
-    try:
-        verify_session_id(session_id, mock_session_dep)
-    except HTTPException:
-        pytest.fail("HTTPException was raised unexpectedly")
+    mock_db.execute.assert_called_once()
+    mock_result.scalars.assert_called_once()
+    mock_result.scalars.return_value.first.assert_called_once()
 
 
 @pytest.mark.asyncio

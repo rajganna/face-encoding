@@ -1,16 +1,22 @@
 from typing import Annotated, Optional, Dict, Any
-
+from collections.abc import AsyncGenerator
 from fastapi import Depends
 from sqlalchemy import JSON, Column
-from sqlmodel import Field, Session, SQLModel, create_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlmodel import Field, SQLModel, create_engine
 
 from app.config.app_config import config
 
-sqlite_file_name = config.database_name
-sqlite_url = f"sqlite:///{sqlite_file_name}"
-
+sqlite_url = config.database_name
 connect_args = {"check_same_thread": False}
-engine = create_engine(sqlite_url, connect_args=connect_args)
+async_engine = create_async_engine(sqlite_url, connect_args=connect_args)
+async_session_maker = async_sessionmaker(async_engine, expire_on_commit=False)
+sync_engine = create_engine(sqlite_url.replace("sqlite+aiosqlite", "sqlite"),
+                            connect_args=connect_args)
 
 
 class Sessions(SQLModel, table=True):
@@ -32,9 +38,9 @@ class Encodings(SQLModel, table=True):
         arbitrary_types_allowed = True
 
 
-def get_session():
-    with Session(engine) as session:
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session_maker() as session:
         yield session
 
 
-SessionDep = Annotated[Session, Depends(get_session)]
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
