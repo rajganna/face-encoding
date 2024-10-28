@@ -84,7 +84,7 @@ curl -X 'POST' \
   -d '{
     "verification": {
       "callback": "http://example.com/callback",
-      "vendorData": "1e1d09a8-4674-41df-b2f3-25c3bd5efd58",
+      "vendorData": "1e1d09a8-4674-41df-b2f3-25c3bd5efd58", // change to sessionID
       "document": {
         "number": "AB123456",
         "country": "US",
@@ -102,7 +102,7 @@ curl -X 'POST' \
   -d '{
     "image": {
       "context": "selfie",
-      "content": "iVBORw0KGgoAAAANSUhEUgAAAAUA...",  # Base64-encoded image
+      "content": "iVBORw0KGgoAAAANSUhEUgAAAAUA...",  # Base64-encoded image // Allow multiple files & do background processing
       "image_type": "png/jpg/bmp"
     }
   }'
